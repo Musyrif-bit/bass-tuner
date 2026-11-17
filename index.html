@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<title>Bass Tuner</title>
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Bass Tuner">
+<meta name="theme-color" content="#111111">
+<link rel="apple-touch-icon" href="icon-180.png">
+<link rel="manifest" href="manifest.json">
+<style>
+  :root {
+    --bg: #111111;
+    --text: #f2ede6;
+    --dim: #8a837b;
+    --good: #3ddc84;
+    --warn: #ffb02e;
+    --bad: #ff5a4e;
+    --wood1: #3b2a20;
+    --wood2: #241912;
+  }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body { margin: 0; height: 100%; background: var(--bg); color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Rounded", "Segoe UI", Roboto, sans-serif;
+    -webkit-user-select: none; user-select: none; overscroll-behavior: none; }
+  body { display: flex; flex-direction: column; align-items: center;
+    padding: calc(env(safe-area-inset-top) + 16px) 16px calc(env(safe-area-inset-bottom) + 12px); }
+
+  .readout { width: 100%; max-width: 420px; text-align: center; }
+  .note { font-size: 96px; font-weight: 700; line-height: 1; height: 100px; transition: color .15s; }
+  .note.good { color: var(--good); }
+  .note.warn { color: var(--warn); }
+  .note.bad  { color: var(--bad); }
+  .hint { font-size: 22px; font-weight: 600; height: 30px; margin-top: 6px; color: var(--dim); }
+  .hint.good { color: var(--good); }
+
+  .meter { position: relative; height: 54px; margin: 18px 8px 0; }
+  .scale { position: absolute; inset: 22px 0 auto 0; height: 10px; border-radius: 5px;
+    background: linear-gradient(90deg, var(--bad) 0%, var(--warn) 30%, var(--good) 47%, var(--good) 53%, var(--warn) 70%, var(--bad) 100%);
+    opacity: .35; }
+  .center { position: absolute; left: 50%; top: 12px; width: 2px; height: 30px; margin-left: -1px; background: var(--text); opacity: .6; }
+  .needle { position: absolute; left: 50%; top: 4px; width: 6px; height: 46px; margin-left: -3px; border-radius: 3px;
+    background: var(--text); transition: left .12s linear, background .15s, opacity .3s; opacity: .25; }
+  .needle.on { opacity: 1; }
+  .needle.good { background: var(--good); box-shadow: 0 0 14px var(--good); }
+  .labels { display: flex; justify-content: space-between; font-size: 13px; color: var(--dim); margin: 0 8px; }
+
+  .head { flex: 1; width: 100%; max-width: 420px; min-height: 0; display: flex; align-items: flex-end; justify-content: center; margin-top: 10px; }
+  .head svg { width: 100%; height: 100%; max-height: 480px; }
+  .peg { cursor: pointer; }
+  .peg .knob { fill: #c9c2b8; stroke: #6f675f; stroke-width: 2; transition: fill .15s; }
+  .peg text { font-size: 30px; font-weight: 700; fill: #1a1a1a; text-anchor: middle; dominant-baseline: central; pointer-events: none; }
+  .peg.sel .knob { fill: #fff; stroke: #fff; stroke-width: 4; }
+  .peg.good .knob { fill: var(--good); stroke: var(--good); }
+  .string { stroke: #b8b2aa; stroke-linecap: round; transition: stroke .15s; }
+  .string.sel { stroke: #fff; }
+  .string.good { stroke: var(--good); }
+
+  .mode { margin-top: 8px; font-size: 15px; color: var(--dim); height: 20px; }
+  .mode b { color: var(--text); }
+
+  .start { position: fixed; inset: 0; background: rgba(10,10,10,.92); display: flex; flex-direction: column;
+    align-items: center; justify-content: center; gap: 18px; z-index: 10; padding: 24px; text-align: center; }
+  .start button { font: inherit; font-size: 24px; font-weight: 700; color: #111; background: var(--good);
+    border: 0; border-radius: 40px; padding: 18px 44px; }
+  .start p { color: var(--dim); margin: 0; font-size: 16px; max-width: 300px; }
+  .hidden { display: none; }
+</style>
+</head>
+<body>
+  <div class="readout">
+    <div class="note" id="note">–</div>
+    <div class="hint" id="hint">Pluck a string</div>
+    <div class="meter">
+      <div class="scale"></div>
+      <div class="center"></div>
+      <div class="needle" id="needle"></div>
+    </div>
+    <div class="labels"><span>♭ low</span><span>high ♯</span></div>
+  </div>
+
+  <div class="head">
+    <svg viewBox="0 0 320 440" aria-label="Bass headstock">
+      <defs>
+        <linearGradient id="wood" x1="0" x2="1" y1="0" y2="1">
+          <stop offset="0" stop-color="#3b2a20"/>
+          <stop offset="1" stop-color="#241912"/>
+        </linearGradient>
+      </defs>
+      <!-- headstock + neck -->
+      <path d="M125 440 L125 372 C118 340 92 320 88 280 L80 110 C78 60 110 28 160 22 C210 28 242 60 240 110 L232 280 C228 320 202 340 195 372 L195 440 Z"
+            fill="url(#wood)" stroke="#5a4334" stroke-width="2"/>
+      <!-- nut -->
+      <rect x="123" y="366" width="74" height="8" rx="2" fill="#e8e0d0"/>
+
+      <!-- tuner shafts -->
+      <g stroke="#9a938a" stroke-width="8" stroke-linecap="round">
+        <line x1="44" y1="140" x2="112" y2="140"/>
+        <line x1="44" y1="260" x2="116" y2="260"/>
+        <line x1="208" y1="140" x2="276" y2="140"/>
+        <line x1="204" y1="260" x2="276" y2="260"/>
+      </g>
+
+      <!-- strings: E, A, D, G (nut left to right) -->
+      <line class="string" data-s="0" x1="134" y1="370" x2="116" y2="260" stroke-width="5"/>
+      <line class="string" data-s="1" x1="152" y1="370" x2="112" y2="140" stroke-width="4"/>
+      <line class="string" data-s="2" x1="168" y1="370" x2="208" y2="140" stroke-width="3.2"/>
+      <line class="string" data-s="3" x1="186" y1="370" x2="204" y2="260" stroke-width="2.6"/>
+
+      <!-- posts -->
+      <g fill="#d8d2c8" stroke="#7a736b" stroke-width="2">
+        <circle cx="112" cy="140" r="9"/><circle cx="116" cy="260" r="9"/>
+        <circle cx="208" cy="140" r="9"/><circle cx="204" cy="260" r="9"/>
+      </g>
+
+      <!-- pegs (tap to pick a string) -->
+      <g class="peg" data-s="1"><ellipse class="knob" cx="34" cy="140" rx="28" ry="34"/><text x="34" y="140">A</text></g>
+      <g class="peg" data-s="0"><ellipse class="knob" cx="34" cy="260" rx="28" ry="34"/><text x="34" y="260">E</text></g>
+      <g class="peg" data-s="2"><ellipse class="knob" cx="286" cy="140" rx="28" ry="34"/><text x="286" y="140">D</text></g>
+      <g class="peg" data-s="3"><ellipse class="knob" cx="286" cy="260" rx="28" ry="34"/><text x="286" y="260">G</text></g>
+    </svg>
+  </div>
+  <div class="mode" id="mode"><b>Auto</b> · tap a peg to lock a string</div>
+
+  <div class="start" id="start">
+    <button id="go">Start tuning</button>
+    <p>Allow the microphone so the tuner can hear your bass.</p>
+  </div>
+
+<script>
+(() => {
+  const STRINGS = [
+    { name: "E", freq: 41.2034 },
+    { name: "A", freq: 55.0000 },
+    { name: "D", freq: 73.4162 },
+    { name: "G", freq: 97.9989 },
+  ];
+  const IN_TUNE = 3;   // cents
+  const CLOSE = 12;    // cents
+
+  const $ = id => document.getElementById(id);
+  const noteEl = $("note"), hintEl = $("hint"), needle = $("needle"), modeEl = $("mode");
+  const pegs = [...document.querySelectorAll(".peg")];
+  const strs = [...document.querySelectorAll(".string")];
+
+  let locked = -1;          // -1 = auto
+  let lastHeard = 0;
+  const history = [];
+
+  // ---- string selection ----
+  pegs.forEach(p => p.addEventListener("click", () => {
+    const s = +p.dataset.s;
+    locked = (locked === s) ? -1 : s;
+    modeEl.innerHTML = locked < 0
+      ? "<b>Auto</b> · tap a peg to lock a string"
+      : "Locked to <b>" + STRINGS[locked].name + "</b> · tap it again for auto";
+    paint(locked, null);
+    if (locked >= 0) { noteEl.textContent = STRINGS[locked].name; noteEl.className = "note"; hintEl.textContent = "Pluck the " + STRINGS[locked].name + " string"; hintEl.className = "hint"; }
+  }));
+
+  function paint(idx, cls) {
+    pegs.forEach(p => p.classList.remove("sel", "good"));
+    strs.forEach(s => s.classList.remove("sel", "good"));
+    if (idx < 0) return;
+    const peg = pegs.find(p => +p.dataset.s === idx), st = strs.find(s => +s.dataset.s === idx);
+    peg.classList.add(cls === "good" ? "good" : "sel");
+    st.classList.add(cls === "good" ? "good" : "sel");
+  }
+
+  // ---- display ----
+  function show(freq) {
+    let idx = locked, f = freq;
+    if (idx < 0) {
+      // fold obvious overtones back down, then pick nearest string
+      while (f > 125) f /= 2;
+      let best = 1e9;
+      STRINGS.forEach((s, i) => { const c = Math.abs(1200 * Math.log2(f / s.freq)); if (c < best) { best = c; idx = i; } });
+    } else {
+      const t = STRINGS[idx].freq;
+      while (f > t * Math.SQRT2) f /= 2;
+      while (f < t / Math.SQRT2) f *= 2;
+    }
+    const cents = 1200 * Math.log2(f / STRINGS[idx].freq);
+    const a = Math.abs(cents);
+    const cls = a <= IN_TUNE ? "good" : a <= CLOSE ? "warn" : "bad";
+
+    noteEl.textContent = STRINGS[idx].name;
+    noteEl.className = "note " + cls;
+    if (cls === "good") { hintEl.textContent = "In tune ✓"; hintEl.className = "hint good"; }
+    else { hintEl.textContent = cents < 0 ? "Tune up ↑" : "Tune down ↓"; hintEl.className = "hint"; }
+
+    const pos = Math.max(-50, Math.min(50, cents));
+    needle.style.left = (50 + pos) + "%";
+    needle.className = "needle on" + (cls === "good" ? " good" : "");
+    paint(idx, cls);
+  }
+
+  function idle() {
+    needle.className = "needle";
+    needle.style.left = "50%";
+    if (locked < 0) { noteEl.textContent = "–"; noteEl.className = "note"; paint(-1); }
+    else { noteEl.className = "note"; paint(locked, null); }
+    hintEl.textContent = locked < 0 ? "Pluck a string" : "Pluck the " + STRINGS[locked].name + " string";
+    hintEl.className = "hint";
+  }
+
+  // ---- pitch detection (YIN) ----
+  function yin(buf, sr) {
+    const minF = 30, maxF = 420;
+    const tauMin = Math.floor(sr / maxF), tauMax = Math.min(Math.floor(sr / minF), (buf.length >> 1) - 1);
+    const W = buf.length - tauMax;
+    const d = new Float32Array(tauMax + 1);
+    for (let tau = 1; tau <= tauMax; tau++) {
+      let s = 0;
+      for (let i = 0; i < W; i++) { const x = buf[i] - buf[i + tau]; s += x * x; }
+      d[tau] = s;
+    }
+    // cumulative mean normalised difference
+    let run = 0; d[0] = 1;
+    for (let tau = 1; tau <= tauMax; tau++) { run += d[tau]; d[tau] = run ? d[tau] * tau / run : 1; }
+    let tau = -1;
+    for (let t = tauMin; t <= tauMax; t++) {
+      if (d[t] < 0.15) { while (t + 1 <= tauMax && d[t + 1] < d[t]) t++; tau = t; break; }
+    }
+    if (tau < 0) return -1;
+    // parabolic interpolation
+    const x0 = d[tau - 1] ?? d[tau], x2 = d[tau + 1] ?? d[tau], x1 = d[tau];
+    const den = x0 + x2 - 2 * x1;
+    const better = den ? tau + (x0 - x2) / (2 * den) : tau;
+    return sr / better;
+  }
+
+  // ---- audio ----
+  async function start() {
+    const btn = $("go");
+    btn.textContent = "Starting…";
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({
+        audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: false }
+      });
+      const ctx = new (window.AudioContext || window.webkitAudioContext)();
+      await ctx.resume();
+      const src = ctx.createMediaStreamSource(stream);
+      const lp = ctx.createBiquadFilter(); lp.type = "lowpass"; lp.frequency.value = 400; lp.Q.value = 0.7;
+      const hp = ctx.createBiquadFilter(); hp.type = "highpass"; hp.frequency.value = 28;
+      const an = ctx.createAnalyser(); an.fftSize = 8192;
+      src.connect(hp); hp.connect(lp); lp.connect(an);
+      const buf = new Float32Array(an.fftSize);
+
+      $("start").classList.add("hidden");
+      try { if ("wakeLock" in navigator) await navigator.wakeLock.request("screen"); } catch (e) {}
+
+      setInterval(() => {
+        an.getFloatTimeDomainData(buf);
+        let rms = 0; for (let i = 0; i < buf.length; i++) rms += buf[i] * buf[i];
+        rms = Math.sqrt(rms / buf.length);
+        const now = performance.now();
+        if (rms > 0.004) {
+          const f = yin(buf, ctx.sampleRate);
+          if (f > 0) {
+            history.push(f); if (history.length > 5) history.shift();
+            const med = [...history].sort((a, b) => a - b)[history.length >> 1];
+            show(med); lastHeard = now; return;
+          }
+        }
+        if (now - lastHeard > 1200) { history.length = 0; idle(); }
+      }, 70);
+
+      document.addEventListener("visibilitychange", () => { if (!document.hidden) ctx.resume(); });
+    } catch (e) {
+      btn.textContent = "Try again";
+      document.querySelector(".start p").textContent =
+        "Couldn't use the microphone. In Settings › Safari › Microphone, choose Ask or Allow, then try again.";
+    }
+  }
+  $("go").addEventListener("click", start);
+
+  if ("serviceWorker" in navigator) navigator.serviceWorker.register("sw.js").catch(() => {});
+})();
+</script>
+</body>
+</html>
