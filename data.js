@@ -40,23 +40,49 @@ window.BASS_DATA = (function () {
                     [1,3,1],[3,5,1],[1,3,1],[3,5,1],[1,5,1],[3,7,1],[1,5,1],[3,7,1]] }
   ];
 
-  /* Drum patterns: 16 steps per bar (16th notes). v = volume. */
+  /* Drum patterns: 16 steps per bar (16th notes). kick/snare/hat are required arrays (can be empty).
+     Optional: ghost (soft snare), ohat (open hat), rim (cross-stick), ride, tamb (tambourine), kickV (kick volume),
+     progs (allowed progression indexes), prog (one fixed progression), feel (tip for the bass). */
   var genres = [
-    { name: "Rock", bpm: [70, 80], swing: 0,
+    { name: "Rock", bpm: [70, 80], swing: 0, feel: "Straight eighth notes, solid and steady. Dig in.",
       kick: [0, 8, 10], snare: [4, 12], hat: [0, 2, 4, 6, 8, 10, 12, 14] },
-    { name: "Pop", bpm: [70, 80], swing: 0,
+    { name: "Pop", bpm: [70, 80], swing: 0, feel: "Smooth and bouncy. Follow the kick that comes a little early.",
       kick: [0, 6, 8], snare: [4, 12], hat: [0, 2, 4, 6, 8, 10, 12, 14] },
-    { name: "Funk", bpm: [65, 75], swing: 0,
+    { name: "Funk", bpm: [65, 75], swing: 0, feel: "Short, choppy notes with gaps between them. The rests are part of the groove.",
       kick: [0, 3, 10], snare: [4, 12], ghost: [7, 14], hat: [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15] },
-    { name: "Disco", bpm: [75, 80], swing: 0,
+    { name: "Disco", bpm: [75, 80], swing: 0, feel: "Dance feel. Octave jumps sound great here.",
       kick: [0, 4, 8, 12], snare: [4, 12], hat: [0, 4, 8, 12], ohat: [2, 6, 10, 14] },
-    { name: "Reggae", bpm: [65, 75], swing: 0,
+    { name: "Reggae", bpm: [65, 75], swing: 0, feel: "Laid back. The drums skip beat 1, but you still play your root there.",
       kick: [8], snare: [8], hat: [0, 2, 4, 6, 8, 10, 12, 14] },
-    { name: "Blues shuffle", bpm: [65, 75], swing: 0.66, prog: 0,
-      kick: [0, 8], snare: [4, 12], hat: [0, 2, 4, 6, 8, 10, 12, 14] }
+    { name: "Blues shuffle", bpm: [65, 75], swing: 0.66, prog: 0, feel: "Long-short swing: daa-da daa-da.",
+      kick: [0, 8], snare: [4, 12], hat: [0, 2, 4, 6, 8, 10, 12, 14] },
+    { name: "Motown soul", bpm: [70, 80], swing: 0, progs: [1, 3, 4, 7, 18, 22], feel: "Melodic and busy in the best way. Roots, with little walks between chords.",
+      kick: [0, 8], snare: [4, 12], hat: [0, 2, 4, 6, 8, 10, 12, 14], tamb: [4, 12] },
+    { name: "Neo-soul", bpm: [65, 72], swing: 0.33, progs: [22, 23, 24], feel: "Lazy and behind the beat. Play a hair late, and let notes ring.",
+      kick: [0, 7, 10], snare: [], rim: [4, 12], ghost: [15], hat: [0, 2, 4, 6, 8, 10, 12, 14] },
+    { name: "Hip-hop", bpm: [75, 85], swing: 0.2, progs: [5, 10, 15, 24, 25], feel: "Lock to the kick drum like glue. Fewer notes, more weight.",
+      kick: [0, 7, 10], snare: [4, 12], hat: [0, 2, 4, 6, 8, 10, 12, 14] },
+    { name: "R&B slow jam", bpm: [65, 72], swing: 0, progs: [3, 19, 22, 23], feel: "Smooth and warm. Long notes, slides between them.",
+      kick: [0, 6, 10], snare: [], rim: [4, 12], hat: [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15], kickV: 0.9 },
+    { name: "Bossa nova", bpm: [70, 80], swing: 0, progs: [21, 22], feel: "Root on beat 1, 5th on beat 3. Soft touch, like a whisper.",
+      kick: [0, 6, 8, 14], snare: [], rim: [0, 6, 12], hat: [0, 2, 4, 6, 8, 10, 12, 14], kickV: 0.7 },
+    { name: "Country", bpm: [75, 85], swing: 0, progs: [2, 7, 13, 18], feel: "Root, 5th, root, 5th. The classic boom-chick.",
+      kick: [0, 8], snare: [4, 12], hat: [2, 6, 10, 14] },
+    { name: "Jazz swing", bpm: [75, 85], swing: 0.66, progs: [21, 22], feel: "Walk: one note per beat, and use approach notes into each new chord.",
+      kick: [0, 4, 8, 12], snare: [], hat: [4, 12], ride: [0, 4, 6, 8, 12, 14], kickV: 0.35 },
+    { name: "Ska", bpm: [80, 85], swing: 0, progs: [2, 7, 13, 16], feel: "Bright and bouncy. Try walking up to each new chord.",
+      kick: [0, 8], snare: [4, 12], hat: [], ohat: [2, 6, 10, 14] },
+    { name: "Dub", bpm: [65, 70], swing: 0, progs: [15, 17, 26], feel: "The bass is the star. Deep, round, with lots of space.",
+      kick: [8], snare: [], rim: [8], hat: [2, 6, 10, 14], ghost: [14] },
+    { name: "Afrobeat", bpm: [70, 80], swing: 0, progs: [15, 25, 26], feel: "Repeat one short pattern and let it hypnotise. Small changes only.",
+      kick: [0, 3, 8, 10], snare: [4, 12], hat: [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15], ohat: [6, 14] },
+    { name: "City pop", bpm: [75, 82], swing: 0, progs: [1, 19, 22, 23], feel: "Groovy 80s pop. Octaves and little runs make it shine.",
+      kick: [0, 8, 10], snare: [4, 12], hat: [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15] },
+    { name: "Synthwave", bpm: [75, 85], swing: 0, progs: [3, 5, 10, 20], feel: "Steady eighth notes that drive forward, like a car at night.",
+      kick: [0, 4, 8, 12], snare: [4, 12], hat: [], ohat: [2, 6, 10, 14] }
   ];
 
-  /* Progressions: chords are [semitones from key, quality, suffix]. The first one is the blues. */
+  /* Progressions: chords are [semitones from key, quality, suffix]. 0 is the blues. 1-20 are the general pool. 21+ are for specific genres. */
   var progs = [
     { roman: "I7 – IV7 – I7 – V7", ch: [[0,"maj","7"],[5,"maj","7"],[0,"maj","7"],[7,"maj","7"]] },
     { roman: "I – V – vi – IV", ch: [[0,"maj"],[7,"maj"],[9,"min"],[5,"maj"]] },
@@ -78,7 +104,13 @@ window.BASS_DATA = (function () {
     { roman: "i – iv – i – v", ch: [[0,"min"],[5,"min"],[0,"min"],[7,"min"]] },
     { roman: "I – I – IV – V", ch: [[0,"maj"],[0,"maj"],[5,"maj"],[7,"maj"]] },
     { roman: "vi – ii – V – I", ch: [[9,"min"],[2,"min"],[7,"maj"],[0,"maj"]] },
-    { roman: "i – VI – VII – i", ch: [[0,"min"],[8,"maj"],[10,"maj"],[0,"min"]] }
+    { roman: "i – VI – VII – i", ch: [[0,"min"],[8,"maj"],[10,"maj"],[0,"min"]] },
+    { roman: "ii7 – V7 – Imaj7 – Imaj7", ch: [[2,"min","7"],[7,"maj","7"],[0,"maj","maj7"],[0,"maj","maj7"]] },
+    { roman: "Imaj7 – vi7 – ii7 – V7", ch: [[0,"maj","maj7"],[9,"min","7"],[2,"min","7"],[7,"maj","7"]] },
+    { roman: "Imaj7 – iii7 – vi7 – IVmaj7", ch: [[0,"maj","maj7"],[4,"min","7"],[9,"min","7"],[5,"maj","maj7"]] },
+    { roman: "i7 – iv7 – i7 – v7", ch: [[0,"min","7"],[5,"min","7"],[0,"min","7"],[7,"min","7"]] },
+    { roman: "i7 – i7 – IV7 – IV7", ch: [[0,"min","7"],[0,"min","7"],[5,"maj","7"],[5,"maj","7"]] },
+    { roman: "i – i – VII – VII", ch: [[0,"min"],[0,"min"],[10,"maj"],[10,"maj"]] }
   ];
 
   /* Original licks. n = [semitones from chord root, beats]. d = difficulty 1-3. q = chord type it fits. Each is one bar. */

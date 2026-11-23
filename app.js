@@ -59,7 +59,7 @@
     var r = rng(d.getFullYear() * 10000 + (d.getMonth() + 1) * 100 + d.getDate());
     var g = D.genres[Math.floor(r() * D.genres.length)];
     var bpm = g.bpm[0] + Math.floor(r() * (g.bpm[1] - g.bpm[0] + 1));
-    var pi = (g.prog != null) ? g.prog : 1 + Math.floor(r() * (D.progs.length - 1));
+    var pi = g.progs ? g.progs[Math.floor(r() * g.progs.length)] : (g.prog != null) ? g.prog : 1 + Math.floor(r() * 20);
     var prog = D.progs[pi];
     var key = [4, 9, 2, 7, 0][Math.floor(r() * 5)];
     var chords = prog.ch.map(function (c) {
@@ -112,6 +112,8 @@
   }
   function snare(t, v) { noise(t, "bandpass", 1900, 0.7 * v, 0.16); tone(t, "triangle", 190, 0.35 * v, 0.08); }
   function hat(t, v, open) { noise(t, "highpass", 7000, 0.3 * v, open ? 0.22 : 0.05); }
+  function rim(t, v) { tone(t, "triangle", 820, 0.35 * v, 0.03); noise(t, "bandpass", 2600, 0.35 * v, 0.03); }
+  function ride(t, v) { noise(t, "highpass", 5200, 0.16 * v, 0.4); tone(t, "square", 3400, 0.02 * v, 0.25); }
   function pluck(t, m, len) {
     var f = mfreq(m), lp = ctx.createBiquadFilter(), g = ctx.createGain();
     var o = ctx.createOscillator(), o2 = ctx.createOscillator();
@@ -359,7 +361,7 @@
     if (id === "warm") return "5 minutes of the 1-2-3-4 drill. Follow the green note, one note per click. Slow and clean beats fast.";
     if (id === "tech") return "Today: " + plan.tech.name + ". " + plan.tech.tip;
     if (id === "quiz") return "The app names a note. Find it on the neck and play it. The mic checks it for you. Stuck? Tap \"Show me\".";
-    if (id === "groove") return "Today: " + plan.genre.name + " at " + bpmFor("band") + " BPM, chords " + plan.chords.map(function (c) { return c.name; }).join(" → ") + ". Roots only. Lock in with the kick drum (the orange square).";
+    if (id === "groove") return "Today: " + plan.genre.name + " at " + bpmFor("band") + " BPM, chords " + plan.chords.map(function (c) { return c.name; }).join(" → ") + ". Roots only. Lock in with the kick drum (the orange square)." + (plan.genre.feel ? " Feel: " + plan.genre.feel : "");
     return "Same beat. Now make it yours. Level " + store.level + ": " + D.levels[store.level - 1].name + ". The last 2 minutes are yours to jam.";
   }
 
@@ -542,11 +544,14 @@
   var band = { bar: 0, beat: 0 };
   function bandStep(step, t) {
     var g = plan.genre, st = step % 16, bar = Math.floor(step / 16);
-    if (g.kick.indexOf(st) >= 0) { kick(t, 1); vis(t, function () { var k = $("kk"); if (k) { k.classList.add("on"); setTimeout(function () { k.classList.remove("on"); }, 110); } }); }
+    if (g.kick.indexOf(st) >= 0) { kick(t, g.kickV || 1); vis(t, function () { var k = $("kk"); if (k) { k.classList.add("on"); setTimeout(function () { k.classList.remove("on"); }, 110); } }); }
     if (g.snare.indexOf(st) >= 0) snare(t, g.name === "Reggae" ? 0.5 : 0.8);
     if (g.ghost && g.ghost.indexOf(st) >= 0) snare(t, 0.18);
     if (g.hat.indexOf(st) >= 0) hat(t, st % 4 === 0 ? 0.5 : 0.3, false);
     if (g.ohat && g.ohat.indexOf(st) >= 0) hat(t, 0.35, true);
+    if (g.rim && g.rim.indexOf(st) >= 0) rim(t, 0.6);
+    if (g.ride && g.ride.indexOf(st) >= 0) ride(t, st % 4 === 0 ? 0.6 : 0.45);
+    if (g.tamb && g.tamb.indexOf(st) >= 0) hat(t, 0.45, true);
     if (st % 4 === 0) vis(t, function () { band.bar = bar; band.beat = st / 4; bandDraw(); });
   }
   function bandDraw() {
