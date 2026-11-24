@@ -69,6 +69,7 @@
     });
     var day = d.getDay(), review = day === 0;
     var tech = review ? D.tech[1 + Math.floor(r() * 6)] : D.tech[day];
+    if (window.BASS_TECH) { tech = window.BASS_TECH[day]; review = false; }
     return { day: dkey(d), genre: g, bpm: bpm, chords: chords, key: key, pi: pi, tech: tech, review: review, lickR: r() };
   }
   var plan = makePlan();
@@ -438,7 +439,7 @@
 
   function introText(id) {
     if (id === "warm") { var wp = warmPick(); return "3 short parts, new every day: a 40-second hand stretch, then " + wp.f.name + ", then " + wp.p.name + ". Tap Next part whenever you feel ready. Slow and clean beats fast."; }
-    if (id === "tech") return "Today: " + plan.tech.name + ". " + plan.tech.tip;
+    if (id === "tech") return window.TechMode ? "Today: " + plan.tech.name + ". Three steps: learn the shape, move it to new keys, then use it over today's " + plan.genre.name + " groove. Tap Next part whenever you feel ready." : "Today: " + plan.tech.name + ". " + plan.tech.tip;
     if (id === "quiz") return "The app names a note. Find it on the neck and play it. The mic checks it for you. Stuck? Tap \"Show me\".";
     if (id === "groove") return "Today: " + plan.genre.name + " at " + bpmFor("band") + " BPM, chords " + plan.chords.map(function (c) { return c.name; }).join(" → ") + ". Roots only. Lock in with the kick drum (the orange square)." + (plan.genre.feel ? " Feel: " + plan.genre.feel : "");
     if (window.BASS_SONGS && window.BASS_SONGS.songs[plan.genre.name]) return "Song mode: learn a verse riff, a chorus riff and a fill with the guide bass, then play the whole song 3 times. It grows a little each round, and the last round is your own version.";
@@ -477,7 +478,7 @@
   }
   function makeBlock(id, stage) {
     if (id === "warm") return warmBlock(stage);
-    if (id === "tech") return exBlock(stage, plan.tech, "tech");
+    if (id === "tech") return window.TechMode ? window.TechMode(window.__core, stage) : exBlock(stage, plan.tech, "tech");
     if (id === "quiz") return quizBlock(stage);
     if (id === "build" && window.SongMode && window.BASS_SONGS && window.BASS_SONGS.songs[plan.genre.name]) return window.SongMode(window.__core, stage);
     return bandBlock(stage, id === "build");
@@ -904,7 +905,7 @@
 
   window.__core = { plan: function () { return plan; }, store: store, S: S, progs: D.progs, SN: SN, OPEN: OPEN,
     bandStep: bandStep, band: band, seqStart: seqStart, seqStop: seqStop, seqStep: function () { return seq.step; },
-    setBpm: function (b) { seq.dur = 60 / b / 4; }, vis: vis, place: place, noteName: noteName, mfreq: mfreq,
+    setBpm: function (b) { seq.dur = 60 / b / 4; }, FAST: FAST, vis: vis, place: place, noteName: noteName, mfreq: mfreq,
     ctx: function () { return audio(); }, out: function () { audio(); return master; }, bpmFor: bpmFor, tempoUI: tempoUI,
     fbCard: fbCard, drawFb: drawFb, el: el, btn: btn };
   window.__bc = { plan: function () { return plan; }, store: store, show: showView, lick: todaysLick, audio: function () { return { ctx: ctx, master: master }; } };
