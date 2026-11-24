@@ -174,5 +174,44 @@ window.BASS_DATA = (function () {
     { name: "Fills", goal: "When the fill cue lights up, play a short pentatonic run and land on the root on beat 1." }
   ];
 
-  return { warmup: warmup, tech: tech, genres: genres, progs: progs, licks: licks, levels: levels };
+
+  /* ---------- warm-up: 3 parts, drills rotate by day ---------- */
+  function q(list, len) { return list.map(function (x) { return [x[0], x[1], len]; }); }
+  function each(strs, frets) { var o = []; strs.forEach(function (s) { frets.forEach(function (f) { o.push([s, f]); }); }); return o; }
+  var UP = [0, 1, 2, 3], DOWN = [3, 2, 1, 0];
+  var stretch = [
+    { t: "Shake out both hands. Loose and easy." },
+    { t: "Open your hands wide, then make a soft fist. Slowly, about 5 times." },
+    { t: "One arm straight, palm facing out. With the other hand, gently pull the fingers back. Switch hands halfway. Never stretch to pain." },
+    { t: "Slow wrist circles, both directions." }
+  ];
+  var finger = [
+    { name: "1-2-3-4 finger drill", tip: "One finger per fret: index on 1, middle on 2, ring on 3, pinky on 4. Keep each finger down until you need it.",
+      ev: q(each(UP, [1, 2, 3, 4]).concat(each(DOWN, [4, 3, 2, 1])), 1) },
+    { name: "1-3-2-4 finger drill", tip: "Same one-finger-per-fret hand, new order: index, ring, middle, pinky. Go slow, it twists the brain a little.",
+      ev: q(each(UP, [1, 3, 2, 4]).concat(each(DOWN, [4, 2, 3, 1])), 1) },
+    { name: "Pinky first (4-3-2-1)", tip: "Start with the pinky and walk back to the index. Put all four fingers down first, then lift one at a time.",
+      ev: q(each(UP, [4, 3, 2, 1]).concat(each(DOWN, [1, 2, 3, 4])), 1) },
+    { name: "Spider walk", tip: "1-2-3-4 across the strings, then move your whole hand one fret higher and come back. The hand walks up the neck like a spider.",
+      ev: q(each(UP, [1, 2, 3, 4]).concat(each(DOWN, [2, 3, 4, 5]), each(UP, [3, 4, 5, 6]), each(DOWN, [4, 5, 6, 7])), 1) },
+    { name: "Finger pairs", tip: "Two fingers at a time: index-middle, then ring-pinky. Keep the hand still; only the fingers move.",
+      ev: q(each(UP, [1, 2, 1, 2, 3, 4, 3, 4]), 1) },
+    { name: "Diagonal", tip: "Each finger stays on its own fret while you cross the strings: index on E, middle on A, ring on D, pinky on G, then back the other way.",
+      ev: q([1, 2, 3, 4].reduce(function (o, b) { return o.concat([[0, b], [1, b + 1], [2, b + 2], [3, b + 3], [3, b], [2, b + 1], [1, b + 2], [0, b + 3]]); }, []), 1) }
+  ];
+  var pluck = [
+    { name: "Open string eighths", tip: "Two notes per click. Alternate index and middle: never the same finger twice. Let the left hand rest.",
+      ev: q(each(UP, [0, 0, 0, 0, 0, 0, 0, 0]).concat(each(DOWN, [0, 0, 0, 0, 0, 0, 0, 0])), 0.5) },
+    { name: "Walk across the strings", tip: "E A D G and back, two notes per click. After plucking, let your finger rest on the next string down.",
+      ev: q([[0, 0], [1, 0], [2, 0], [3, 0], [3, 0], [2, 0], [1, 0], [0, 0]], 0.5) },
+    { name: "Skip a string", tip: "Jump over a string: E to D, then A to G. Keep alternating fingers even when you jump.",
+      ev: q([[0, 0], [2, 0], [0, 0], [2, 0], [0, 0], [2, 0], [0, 0], [2, 0], [1, 0], [3, 0], [1, 0], [3, 0], [1, 0], [3, 0], [1, 0], [3, 0]], 0.5) },
+    { name: "Gallop", tip: "Long-short-short, like a horse: da, da-da. One long note, then two quick ones. Keep alternating fingers.",
+      ev: [0, 1, 2, 3].reduce(function (o, s) { var g = [[s, 0, 0.5], [s, 0, 0.25], [s, 0, 0.25]]; return o.concat(g, g, g, g); }, []) },
+    { name: "Octave pluck", tip: "Open E, then the same E an octave up (D string, fret 2). Then open A, and A an octave up (G string, fret 2). Pluck the low note with index, the high one with middle.",
+      ev: q([[0, 0], [2, 2], [0, 0], [2, 2], [0, 0], [2, 2], [0, 0], [2, 2], [1, 0], [3, 2], [1, 0], [3, 2], [1, 0], [3, 2], [1, 0], [3, 2]], 0.5) }
+  ];
+  var warmups = { stretch: stretch, finger: finger, pluck: pluck };
+
+  return { warmups: warmups, warmup: warmup, tech: tech, genres: genres, progs: progs, licks: licks, levels: levels };
 })();

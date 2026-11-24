@@ -437,7 +437,7 @@
   }
 
   function introText(id) {
-    if (id === "warm") return "5 minutes of the 1-2-3-4 drill. Follow the green note, one note per click. Slow and clean beats fast.";
+    if (id === "warm") { var wp = warmPick(); return "3 short parts, new every day: a 40-second hand stretch, then " + wp.f.name + ", then " + wp.p.name + ". Tap Next part whenever you feel ready. Slow and clean beats fast."; }
     if (id === "tech") return "Today: " + plan.tech.name + ". " + plan.tech.tip;
     if (id === "quiz") return "The app names a note. Find it on the neck and play it. The mic checks it for you. Stuck? Tap \"Show me\".";
     if (id === "groove") return "Today: " + plan.genre.name + " at " + bpmFor("band") + " BPM, chords " + plan.chords.map(function (c) { return c.name; }).join(" → ") + ". Roots only. Lock in with the kick drum (the orange square)." + (plan.genre.feel ? " Feel: " + plan.genre.feel : "");
@@ -476,7 +476,7 @@
     resume();
   }
   function makeBlock(id, stage) {
-    if (id === "warm") return exBlock(stage, D.warmup, "warm");
+    if (id === "warm") return warmBlock(stage);
     if (id === "tech") return exBlock(stage, plan.tech, "tech");
     if (id === "quiz") return quizBlock(stage);
     if (id === "build" && window.SongMode && window.BASS_SONGS && window.BASS_SONGS.songs[plan.genre.name]) return window.SongMode(window.__core, stage);
@@ -550,6 +550,63 @@
     w.appendChild(lab);
     w.appendChild(btn("", "+", function () { set(5); }));
     stage.appendChild(w);
+  }
+
+  /* ---------- warm-up: stretch, finger drill, plucking drill ---------- */
+  var WARM_STRETCH = 40, WARM_FINGER = 130; /* seconds: stretch ends at 0:40, finger drill suggested until 2:50 */
+  function warmPick() {
+    var W = D.warmups, n = new Date(), day = Math.floor(Date.UTC(n.getFullYear(), n.getMonth(), n.getDate()) / 864e5);
+    return { f: W.finger[day % W.finger.length], p: W.pluck[(day + Math.floor(day / W.finger.length)) % W.pluck.length] };
+  }
+  function warmBlock(stage) {
+    var W = D.warmups, pick = warmPick(), part = 0, cur = null, hinted = -1;
+    var NAMES = ["Hand stretch", "Finger drill", "Plucking drill"];
+    var head = el("div", "small"), body = el("div", null), hint = el("div", "card");
+    var next = btn("", "Next part →", function () { go(part + 1); });
+    next.style.cssText = "width:100%;margin:6px 0;border-radius:30px";
+    hint.style.display = "none";
+    stage.appendChild(head); stage.appendChild(body); stage.appendChild(hint); stage.appendChild(next);
+    function elapsed() { return (S.total - S.left) * FAST; }
+    function go(k) {
+      if (cur && cur.halt) cur.halt();
+      seqStop(); cur = null; part = k; hinted = -1;
+      hint.style.display = "none"; next.className = "";
+      head.textContent = "Part " + (k + 1) + " of 3 · " + NAMES[k];
+      next.style.display = k < 2 ? "" : "none";
+      body.innerHTML = "";
+      if (k === 0) {
+        body.appendChild(el("h2", null, "Hand stretch"));
+        var st = el("p", "tip"); st.id = "wst"; st.style.fontSize = "18px"; body.appendChild(st);
+        var dots = el("div", "small"); dots.id = "wsd"; body.appendChild(dots);
+        body.appendChild(el("p", "small", "No playing yet. Breathe slowly. Tap Next part anytime."));
+        drawStretch();
+      } else {
+        cur = exBlock(body, k === 1 ? pick.f : pick.p, k === 1 ? "warm" : "pluck");
+        if (S.running) cur.play();
+      }
+    }
+    function drawStretch() {
+      var t = elapsed(), per = WARM_STRETCH / W.stretch.length, i = Math.min(W.stretch.length - 1, Math.floor(t / per));
+      var s = $("wst"), d = $("wsd"); if (!s) return;
+      if (t >= WARM_STRETCH) { s.textContent = "All warm. Tap Next part to start the finger drill."; d.textContent = ""; return; }
+      s.textContent = W.stretch[i].t;
+      d.textContent = "Step " + (i + 1) + " of " + W.stretch.length + " · " + Math.ceil(per - (t % per)) + "s";
+    }
+    function due() { return part === 0 ? WARM_STRETCH : part === 1 ? WARM_STRETCH + WARM_FINGER : 1e9; }
+    go(0);
+    window.__warm = { pick: pick, part: function () { return part; }, go: go };
+    return {
+      play: function () { if (cur) cur.play(); },
+      halt: function () { if (cur) cur.halt(); },
+      tick: function () {
+        if (part === 0) drawStretch();
+        if (elapsed() >= due() && hinted !== part) {
+          hinted = part;
+          if (part === 1) { hint.textContent = "Time for the plucking drill. Finish this round, then tap Next part when you're ready."; hint.style.display = ""; }
+          next.className = "primary";
+        }
+      }
+    };
   }
 
   /* ---------- warm-up / technique: follow the green note ---------- */
