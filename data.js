@@ -33,7 +33,7 @@ window.BASS_DATA = (function () {
       bpm: 60, ev: [[0,3,1],[1,5,1],[2,5,1],[1,5,1],[1,3,1],[2,5,1],[3,5,1],[2,5,1],
                     [0,5,1],[1,7,1],[2,7,1],[1,7,1],[1,5,1],[2,7,1],[3,7,1],[2,7,1]] },
     { name: "Minor pentatonic", tip: "This is the scale for fills. Fret 5 with your index, fret 7 and 8 with ring and pinky.",
-      bpm: 60, ev: [[0,5,1],[0,8,1],[1,5,1],[1,7,1],[2,5,1],[2,7,1],[3,5,1],[3,8,2],
+      bpm: 60, ev: [[0,5,1],[0,8,1],[1,5,1],[1,7,1],[2,5,1],[2,7,1],[3,5,1],[3,7,2],
                     [3,5,1],[2,7,1],[2,5,1],[1,7,1],[1,5,1],[0,8,1],[0,5,2]] },
     { name: "Octaves", tip: "Index on the root, ring or pinky two strings up, two frets higher. Mute the string in between.",
       bpm: 60, ev: [[0,3,1],[2,5,1],[0,3,1],[2,5,1],[0,5,1],[2,7,1],[0,5,1],[2,7,1],
