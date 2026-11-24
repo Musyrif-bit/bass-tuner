@@ -1,5 +1,5 @@
-const CACHE = "bass-tuner-v9";
-const FILES = ["./", "index.html", "data.js", "phrases.js", "song.js", "app.js", "manifest.json", "icon-180.png", "icon-512.png"];
+const CACHE = "bass-tuner-v10";
+const FILES = ["./", "index.html", "data.js", "phrases.js", "phrases2.js", "song.js", "app.js", "manifest.json", "icon-180.png", "icon-512.png"];
 self.addEventListener("install", e => { self.skipWaiting(); e.waitUntil(caches.open(CACHE).then(c => c.addAll(FILES.map(u => new Request(u, { cache: "reload" }))))); });
 self.addEventListener("activate", e => e.waitUntil(
   caches.keys().then(ks => Promise.all(ks.filter(k => k !== CACHE).map(k => caches.delete(k)))).then(() => self.clients.claim())));

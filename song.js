@@ -16,7 +16,7 @@
     ".dim{opacity:.35}";
   document.head.appendChild(css);
 
-  var DEG = { R: 0, b2: 1, "2": 2, b3: 3, "3": 4, "4": 5, b5: 6, "5": 7, b6: 8, "6": 9, b7: 10, "7": 11, "8": 12, "9": 14, "5-": -5, "6-": -3, "b7-": -2 };
+  var DEG = { R: 0, b2: 1, "2": 2, b3: 3, "3": 4, "4": 5, b5: 6, "5": 7, b6: 8, "6": 9, b7: 10, "7": 11, "8": 12, "9": 14, "5-": -5, "6-": -3, "b7-": -2, "58": 19 };
   var STEPS = ["verse", "chorus", "fill", "song", "jam"];
   var STEP_LABEL = ["Verse", "Chorus", "Fill", "Song ×3", "Jam"];
 
