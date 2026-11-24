@@ -68,7 +68,7 @@
     });
     var day = d.getDay(), review = day === 0;
     var tech = review ? D.tech[1 + Math.floor(r() * 6)] : D.tech[day];
-    return { day: dkey(d), genre: g, bpm: bpm, chords: chords, tech: tech, review: review, lickR: r() };
+    return { day: dkey(d), genre: g, bpm: bpm, chords: chords, key: key, pi: pi, tech: tech, review: review, lickR: r() };
   }
   var plan = makePlan();
   var bpmNow = {};
@@ -428,6 +428,7 @@
     if (id === "tech") return "Today: " + plan.tech.name + ". " + plan.tech.tip;
     if (id === "quiz") return "The app names a note. Find it on the neck and play it. The mic checks it for you. Stuck? Tap \"Show me\".";
     if (id === "groove") return "Today: " + plan.genre.name + " at " + bpmFor("band") + " BPM, chords " + plan.chords.map(function (c) { return c.name; }).join(" → ") + ". Roots only. Lock in with the kick drum (the orange square)." + (plan.genre.feel ? " Feel: " + plan.genre.feel : "");
+    if (window.BASS_SONGS && window.BASS_SONGS.songs[plan.genre.name]) return "Song mode: learn a verse riff, a chorus riff and a fill with the guide bass, then play the whole song 3 times. It grows a little each round, and the last round is your own version.";
     return "Same beat. Now make it yours. Level " + store.level + ": " + D.levels[store.level - 1].name + ". The last 2 minutes are yours to jam.";
   }
 
@@ -465,6 +466,7 @@
     if (id === "warm") return exBlock(stage, D.warmup, "warm");
     if (id === "tech") return exBlock(stage, plan.tech, "tech");
     if (id === "quiz") return quizBlock(stage);
+    if (id === "build" && window.SongMode && window.BASS_SONGS && window.BASS_SONGS.songs[plan.genre.name]) return window.SongMode(window.__core, stage);
     return bandBlock(stage, id === "build");
   }
   function drawTimer() {
@@ -618,9 +620,10 @@
     if (g.rim && g.rim.indexOf(st) >= 0) rim(t, 0.6);
     if (g.ride && g.ride.indexOf(st) >= 0) ride(t, st % 4 === 0 ? 0.6 : 0.45);
     if (g.tamb && g.tamb.indexOf(st) >= 0) hat(t, 0.45, true);
+    if (band.lift && st === 14 && band.lift(bar)) hat(t, 0.4, true);
     if (g.comp && store.comp !== 2) g.comp.forEach(function (part) {
       var idx = part.steps.indexOf(st); if (idx < 0) return;
-      var ch = plan.chords[bar % 4], d = part.len * seq.dur;
+      var ch = band.chordAt ? band.chordAt(bar) : plan.chords[bar % 4], d = part.len * seq.dur;
       if (part.inst === "arp") { var vv = voiceOf(ch, ""), an = vv.concat([vv[0] + 12]); playChord("arp", t, [an[idx % an.length] + 12], d, part.vol); }
       else playChord(part.inst, t, voiceOf(ch, part.voice), d, part.vol);
     });
@@ -829,6 +832,11 @@
     else { if (ctx) ctx.resume(); if (tunerOn) wake(true); }
   });
 
+  window.__core = { plan: function () { return plan; }, store: store, S: S, progs: D.progs, SN: SN, OPEN: OPEN,
+    bandStep: bandStep, band: band, seqStart: seqStart, seqStop: seqStop, seqStep: function () { return seq.step; },
+    setBpm: function (b) { seq.dur = 60 / b / 4; }, vis: vis, place: place, noteName: noteName, mfreq: mfreq,
+    ctx: function () { return audio(); }, out: function () { audio(); return master; }, bpmFor: bpmFor, tempoUI: tempoUI,
+    fbCard: fbCard, drawFb: drawFb, el: el, btn: btn };
   window.__bc = { plan: function () { return plan; }, store: store, show: showView, lick: todaysLick, audio: function () { return { ctx: ctx, master: master }; } };
   if ("serviceWorker" in navigator) navigator.serviceWorker.register("sw.js").catch(function () {});
 })();
