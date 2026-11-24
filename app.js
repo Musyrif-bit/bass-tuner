@@ -642,22 +642,22 @@
     var fb = $("fb"); if (fb && !store.hideFb) drawFb(fb, c[ci], nx);
   }
   function drawFb(fb, ch, nx) {
-    var lv = store.level, root = ch.pc, third = (root + (ch.q === "min" ? 3 : 4)) % 12, fifth = (root + 7) % 12;
+    var lv = fb.dataset.groove ? 1 : store.level, root = ch.pc, third = (root + (ch.q === "min" ? 3 : 4)) % 12, fifth = (root + 7) % 12;
     var appr = (lv >= 4 && band.beat === 3) ? [(nx.pc + 1) % 12, (nx.pc + 11) % 12] : [];
     var h = "", rows = [3, 2, 1, 0];
     rows.forEach(function (s) {
       h += "<div class='lab'>" + SN[s] + "</div>";
-      for (var f = 0; f <= 9; f++) {
+      for (var f = 0; f <= 12; f++) {
         var pc = (OPEN[s] + f) % 12, cls = "";
         if (pc === root) cls = "R";
         else if (appr.indexOf(pc) >= 0) cls = "A";
         else if (lv >= 2 && pc === fifth) cls = "F";
         else if (lv >= 3 && pc === third) cls = "T";
-        h += "<div class='" + cls + "'>" + (cls ? noteName(pc) : "") + "</div>";
+        h += "<div class='" + cls + "'>" + noteName(pc) + "</div>";
       }
     });
     h += "<div class='lab'></div>";
-    for (var f2 = 0; f2 <= 9; f2++) h += "<div class='lab'>" + (f2 === 0 ? "open" : f2) + "</div>";
+    for (var f2 = 0; f2 <= 12; f2++) h += "<div class='lab" + ([3, 5, 7, 9, 12].indexOf(f2) >= 0 ? " mk" : "") + "'>" + f2 + "</div>";
     fb.innerHTML = h;
   }
 
@@ -703,12 +703,29 @@
     setTimeout(function () { lickPlaying = false; renderTab(tab, info.ev, -1, info.counts); }, (t - ctx.currentTime) * 1000 + 200);
   }
 
+  function fbCard(stage, groove) {
+    var wrap = el("div", "card"), fb = el("div", "fb"); fb.id = "fb";
+    if (groove) fb.dataset.groove = "1";
+    var leg = el("div", "legend", groove
+      ? "<span><i style='background:var(--good)'></i>Root: play this now</span><span><i style='background:#444'></i>Every other note, for reference</span>"
+      : "<span><i style='background:var(--good)'></i>Root</span><span><i style='background:var(--blue)'></i>5th</span><span><i style='background:var(--warn)'></i>3rd</span><span><i style='background:var(--purple)'></i>Approach</span>");
+    var tg = btn("link", store.hideFb ? "Show fretboard" : "Hide fretboard", function () {
+      store.hideFb = !store.hideFb; save();
+      tg.textContent = store.hideFb ? "Show fretboard" : "Hide fretboard";
+      fb.style.display = leg.style.display = store.hideFb ? "none" : "";
+      if (!store.hideFb) bandDraw();
+    });
+    fb.style.display = leg.style.display = store.hideFb ? "none" : "";
+    wrap.appendChild(fb); wrap.appendChild(leg); wrap.appendChild(tg); stage.appendChild(wrap);
+  }
+
   function bandBlock(stage, builder) {
     var wrap = el("div", null);
     wrap.innerHTML = "<div class='chord'><div class='now' id='cnow'>" + plan.chords[0].name + "</div><div class='nx' id='cnext'></div></div>" +
       "<div class='beats'><span id='b0'></span><span id='b1'></span><span id='b2'></span><span id='b3'></span><span class='kick' id='kk'></span></div>";
     stage.appendChild(wrap);
     var info = el("p", "tip"); info.style.textAlign = "center"; stage.appendChild(info);
+    if (!builder) fbCard(stage, true);
     if (builder) {
       var cue = el("div", "cue", "."); cue.id = "cue"; stage.appendChild(cue);
       var lvl = el("div", "card"); stage.appendChild(lvl);
@@ -725,18 +742,7 @@
         lvl.appendChild(r);
       };
       drawLvl();
-      var fbWrap = el("div", "card");
-      var fb = el("div", "fb"); fb.id = "fb";
-      var leg = el("div", "legend", "<span><i style='background:var(--good)'></i>Root</span><span><i style='background:var(--blue)'></i>5th</span><span><i style='background:var(--warn)'></i>3rd</span><span><i style='background:var(--purple)'></i>Approach</span>");
-      var tg = btn("link", store.hideFb ? "Show fretboard" : "Hide fretboard", function () {
-        store.hideFb = !store.hideFb; save();
-        tg.textContent = store.hideFb ? "Show fretboard" : "Hide fretboard";
-        fb.style.display = leg.style.display = store.hideFb ? "none" : "";
-        if (!store.hideFb) bandDraw();
-      });
-      fb.style.display = leg.style.display = store.hideFb ? "none" : "";
-      fbWrap.appendChild(fb); fbWrap.appendChild(leg); fbWrap.appendChild(tg);
-      stage.appendChild(fbWrap);
+      fbCard(stage, false);
       var li = todaysLick();
       var det = el("details", null, "<summary>Lick of the day: " + li.lick.name + "</summary>");
       det.appendChild(el("div", "small", "Over " + li.chord.name + " (the first chord). Count shown under the tab."));
