@@ -58,6 +58,7 @@
     var d = new Date();
     var r = rng(d.getFullYear() * 10000 + (d.getMonth() + 1) * 100 + d.getDate());
     var g = D.genres[Math.floor(r() * D.genres.length)];
+    if (store.pick && store.pick.day === dkey(d)) { var fg = D.genres.filter(function (x) { return x.name === store.pick.name; })[0]; if (fg) g = fg; }
     var bpm = g.bpm[0] + Math.floor(r() * (g.bpm[1] - g.bpm[0] + 1));
     var pi = g.progs ? g.progs[Math.floor(r() * g.progs.length)] : (g.prog != null) ? g.prog : 1 + Math.floor(r() * 20);
     var prog = D.progs[pi];
@@ -412,6 +413,18 @@
     pw.appendChild(el("div", "chips",
       "<span class='chip'>" + plan.genre.name + " · " + plan.bpm + " BPM</span>" +
       "<span class='chip g'>" + (plan.review ? "Review: " : "") + plan.tech.name + "</span>"));
+    var gw = el("div", "small", "Genre today: ");
+    var sel = el("select");
+    sel.style.cssText = "font:inherit;font-size:16px;color:var(--text);background:var(--card);border:1px solid var(--line);border-radius:10px;padding:6px 8px;margin-left:4px";
+    D.genres.forEach(function (gg) {
+      var o = document.createElement("option"); o.value = gg.name;
+      o.textContent = gg.name + (window.BASS_SONGS && window.BASS_SONGS.songs[gg.name] ? " ★ Song mode" : "");
+      if (gg.name === plan.genre.name) o.selected = true;
+      sel.appendChild(o);
+    });
+    sel.addEventListener("change", function () { store.pick = { day: dkey(), name: sel.value }; save(); plan = makePlan(); bpmNow = {}; renderHome(); });
+    gw.appendChild(sel); gw.style.margin = "6px 0";
+    pw.appendChild(gw);
     pw.appendChild(btn("link", "Tune first", function () { showView("tune"); }));
     var rows = el("div", "card rows");
     BLOCKS.forEach(function (b) {
