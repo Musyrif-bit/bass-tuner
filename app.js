@@ -64,7 +64,7 @@
     var key = [4, 9, 2, 7, 0][Math.floor(r() * 5)];
     var chords = prog.ch.map(function (c) {
       var pc = (key + c[0]) % 12;
-      return { pc: pc, q: c[1], name: noteName(pc) + (c[1] === "min" ? "m" : "") + (c[2] || "") };
+      return { pc: pc, q: c[1], sfx: c[2] || "", name: noteName(pc) + (c[1] === "min" ? "m" : "") + (c[2] || "") };
     });
     var day = d.getDay(), review = day === 0;
     var tech = review ? D.tech[1 + Math.floor(r() * 6)] : D.tech[day];
@@ -75,11 +75,18 @@
   function checkDay() { if (plan.day !== dkey()) { plan = makePlan(); bpmNow = {}; } }
 
   /* ---------- audio ---------- */
-  var ctx = null, master = null, noiseBuf = null;
+  var ctx = null, master = null, noiseBuf = null, chordBus = null, echoIn = null, echoDl = null;
+  var CHORD_VOL = [0.55, 1, 0], CHORD_LABEL = ["Chords: soft", "Chords: loud", "Chords: off"];
   function audio() {
     if (!ctx) {
       ctx = new (window.AudioContext || window.webkitAudioContext)();
-      master = ctx.createGain(); master.gain.value = 0.9; master.connect(ctx.destination);
+      master = ctx.createGain(); master.gain.value = 0.9;
+      var lim = ctx.createDynamicsCompressor(); lim.threshold.value = -10; lim.ratio.value = 4;
+      master.connect(lim); lim.connect(ctx.destination);
+      chordBus = ctx.createGain(); chordBus.gain.value = CHORD_VOL[store.comp || 0]; chordBus.connect(master);
+      echoIn = ctx.createGain(); echoIn.gain.value = 0; echoDl = ctx.createDelay(2); echoDl.delayTime.value = 0.3;
+      var efb = ctx.createGain(); efb.gain.value = 0.38; var elp = ctx.createBiquadFilter(); elp.type = "lowpass"; elp.frequency.value = 2200;
+      echoIn.connect(echoDl); echoDl.connect(elp); elp.connect(efb); efb.connect(echoDl); elp.connect(chordBus);
       noiseBuf = ctx.createBuffer(1, ctx.sampleRate, ctx.sampleRate);
       var dd = noiseBuf.getChannelData(0);
       for (var i = 0; i < dd.length; i++) dd[i] = Math.random() * 2 - 1;
@@ -114,6 +121,65 @@
   function hat(t, v, open) { noise(t, "highpass", 7000, 0.3 * v, open ? 0.22 : 0.05); }
   function rim(t, v) { tone(t, "triangle", 820, 0.35 * v, 0.03); noise(t, "bandpass", 2600, 0.35 * v, 0.03); }
   function ride(t, v) { noise(t, "highpass", 5200, 0.16 * v, 0.4); tone(t, "square", 3400, 0.02 * v, 0.25); }
+
+  /* ---------- chord instruments (the "band" under the drums) ---------- */
+  function voiceOf(ch, kind) {
+    var b = 48 + ch.pc; if (b < 52) b += 12;
+    if (kind === "power") return [b, b + 7, b + 12];
+    var n = [b, b + (ch.q === "min" ? 3 : 4), b + 7];
+    if (ch.sfx === "7") n.push(b + 10); else if (ch.sfx === "maj7") n.push(b + 11);
+    return n;
+  }
+  function osc(type, f, t, end, dest, detune) {
+    var o = ctx.createOscillator(); o.type = type; o.frequency.value = f;
+    if (detune) o.detune.value = detune;
+    o.connect(dest); o.start(t); o.stop(end);
+  }
+  function filt(type, f, q) { var x = ctx.createBiquadFilter(); x.type = type; x.frequency.value = f; if (q) x.Q.value = q; return x; }
+  function playChord(inst, t, notes, dur, vol) {
+    var v = vol * 0.11;
+    notes.forEach(function (m, i) {
+      var f = mfreq(m), g = ctx.createGain(), gg = g.gain, st = t, end, x, h;
+      g.connect(chordBus); g.connect(echoIn);
+      gg.setValueAtTime(0.0001, t);
+      if (inst === "ep") {
+        gg.exponentialRampToValueAtTime(v, st + 0.01); gg.exponentialRampToValueAtTime(v * 0.35, st + Math.max(dur, 0.06));
+        gg.exponentialRampToValueAtTime(0.0001, st + dur + 0.3); end = st + dur + 0.35;
+        osc("sine", f, st, end, g); h = ctx.createGain(); h.gain.value = 0.25; h.connect(g); osc("sine", f * 2, st, end, h);
+      } else if (inst === "piano") {
+        gg.exponentialRampToValueAtTime(v, st + 0.005); gg.exponentialRampToValueAtTime(v * 0.2, st + Math.max(0.1, Math.min(dur, 0.8)));
+        gg.exponentialRampToValueAtTime(0.0001, st + dur + 0.2); end = st + dur + 0.25;
+        osc("triangle", f, st, end, g); h = ctx.createGain(); h.gain.value = 0.3; h.connect(g); osc("sine", f * 2, st, end, h);
+      } else if (inst === "organ") {
+        gg.exponentialRampToValueAtTime(v * 0.7, st + 0.015); gg.setValueAtTime(v * 0.7, st + dur);
+        gg.exponentialRampToValueAtTime(0.0001, st + dur + 0.08); end = st + dur + 0.1;
+        osc("sine", f, st, end, g); h = ctx.createGain(); h.gain.value = 0.5; h.connect(g); osc("sine", f * 2, st, end, h); osc("sine", f * 3, st, end, h);
+      } else if (inst === "pad") {
+        x = filt("lowpass", 1100); x.connect(g);
+        gg.linearRampToValueAtTime(v * 0.6, st + 0.35); gg.setValueAtTime(v * 0.6, st + dur);
+        gg.exponentialRampToValueAtTime(0.0001, st + dur + 0.5); end = st + dur + 0.55;
+        osc("sawtooth", f, st, end, x, -7); osc("sawtooth", f, st, end, x, 7);
+      } else if (inst === "gtr") {
+        st = t + i * 0.006; x = filt("bandpass", 1500, 0.8); x.connect(g);
+        gg.setValueAtTime(0.0001, st); gg.exponentialRampToValueAtTime(v * 1.2, st + 0.003); gg.exponentialRampToValueAtTime(0.0001, st + 0.14); end = st + 0.16;
+        osc("sawtooth", f, st, end, x);
+      } else if (inst === "drive") {
+        st = t + i * 0.006; x = filt("lowpass", 2200); x.connect(g);
+        gg.setValueAtTime(0.0001, st); gg.exponentialRampToValueAtTime(v * 0.9, st + 0.005); gg.exponentialRampToValueAtTime(v * 0.5, st + Math.max(0.02, dur * 0.9));
+        gg.exponentialRampToValueAtTime(0.0001, st + dur + 0.05); end = st + dur + 0.08;
+        osc("sawtooth", f, st, end, x); osc("sawtooth", f, st, end, x, 10);
+      } else if (inst === "nylon") {
+        st = t + i * 0.018; x = filt("lowpass", 3000); x.connect(g);
+        gg.setValueAtTime(0.0001, st); gg.exponentialRampToValueAtTime(v * 1.3, st + 0.003); gg.exponentialRampToValueAtTime(0.0001, st + Math.max(0.4, dur + 0.3)); end = st + Math.max(0.45, dur + 0.35);
+        osc("triangle", f, st, end, x);
+      } else {
+        x = filt("lowpass", 1600); x.connect(g);
+        gg.exponentialRampToValueAtTime(v * 1.6, st + 0.003); gg.exponentialRampToValueAtTime(0.0001, st + 0.22); end = st + 0.25;
+        osc("square", f, st, end, x);
+      }
+    });
+  }
+  function setEcho() { audio(); echoIn.gain.value = plan.genre.echo ? 0.55 : 0; echoDl.delayTime.value = Math.min(1.5, 0.75 * 60 / bpmFor("band")); }
   function pluck(t, m, len) {
     var f = mfreq(m), lp = ctx.createBiquadFilter(), g = ctx.createGain();
     var o = ctx.createOscillator(), o2 = ctx.createOscillator();
@@ -552,6 +618,12 @@
     if (g.rim && g.rim.indexOf(st) >= 0) rim(t, 0.6);
     if (g.ride && g.ride.indexOf(st) >= 0) ride(t, st % 4 === 0 ? 0.6 : 0.45);
     if (g.tamb && g.tamb.indexOf(st) >= 0) hat(t, 0.45, true);
+    if (g.comp && store.comp !== 2) g.comp.forEach(function (part) {
+      var idx = part.steps.indexOf(st); if (idx < 0) return;
+      var ch = plan.chords[bar % 4], d = part.len * seq.dur;
+      if (part.inst === "arp") { var vv = voiceOf(ch, ""), an = vv.concat([vv[0] + 12]); playChord("arp", t, [an[idx % an.length] + 12], d, part.vol); }
+      else playChord(part.inst, t, voiceOf(ch, part.voice), d, part.vol);
+    });
     if (st % 4 === 0) vis(t, function () { band.bar = bar; band.beat = st / 4; bandDraw(); });
   }
   function bandDraw() {
@@ -673,7 +745,12 @@
       det.appendChild(btn("", "▶ Listen", function () { playLick(li, ltab); }));
       stage.appendChild(det);
     }
-    tempoUI(stage, "band", function (b) { seq.dur = 60 / b / 4; });
+    tempoUI(stage, "band", function (b) { seq.dur = 60 / b / 4; if (echoDl) echoDl.delayTime.value = Math.min(1.5, 0.75 * 60 / b); });
+    var cb = btn("", CHORD_LABEL[store.comp || 0], function () {
+      store.comp = ((store.comp || 0) + 1) % 3; save(); cb.textContent = CHORD_LABEL[store.comp];
+      audio(); chordBus.gain.value = CHORD_VOL[store.comp];
+    });
+    cb.style.display = "block"; cb.style.margin = "4px auto 0"; stage.appendChild(cb);
     var lastYours = false;
     function tick() {
       if (builder) {
@@ -688,7 +765,7 @@
     var pos = 0;
     return {
       tick: tick,
-      play: function () { if (!seq.on) seqStart(bpmFor("band"), bandStep, pos, plan.genre.swing); bandDraw(); },
+      play: function () { if (!seq.on) { setEcho(); seqStart(bpmFor("band"), bandStep, pos, plan.genre.swing); } bandDraw(); },
       halt: function () { pos = seq.step - (seq.step % 16); seqStop(); },
       leave: function () {}
     };
@@ -746,6 +823,6 @@
     else { if (ctx) ctx.resume(); if (tunerOn) wake(true); }
   });
 
-  window.__bc = { plan: function () { return plan; }, store: store, show: showView, lick: todaysLick };
+  window.__bc = { plan: function () { return plan; }, store: store, show: showView, lick: todaysLick, audio: function () { return { ctx: ctx, master: master }; } };
   if ("serviceWorker" in navigator) navigator.serviceWorker.register("sw.js").catch(function () {});
 })();

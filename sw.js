@@ -1,4 +1,4 @@
-const CACHE = "bass-tuner-v3";
+const CACHE = "bass-tuner-v4";
 const FILES = ["./", "index.html", "data.js", "app.js", "manifest.json", "icon-180.png", "icon-512.png"];
 self.addEventListener("install", e => { self.skipWaiting(); e.waitUntil(caches.open(CACHE).then(c => c.addAll(FILES))); });
 self.addEventListener("activate", e => e.waitUntil(
