@@ -98,7 +98,11 @@ window.BASS_DATA = (function () {
       comp: [{ inst: "ep", steps: [0, 6, 10], len: 4, vol: 0.9 }, { inst: "gtr", steps: [2, 7, 12, 15], len: 1, vol: 0.5 }] },
     { name: "Synthwave", bpm: [75, 85], swing: 0, progs: [3, 5, 10, 20], feel: "Steady eighth notes that drive forward, like a car at night.",
       kick: [0, 4, 8, 12], snare: [4, 12], hat: [], ohat: [2, 6, 10, 14],
-      comp: [{ inst: "pad", steps: [0], len: 16, vol: 0.6 }, { inst: "arp", steps: [0, 2, 4, 6, 8, 10, 12, 14], len: 2, vol: 0.7 }] }
+      comp: [{ inst: "pad", steps: [0], len: 16, vol: 0.6 }, { inst: "arp", steps: [0, 2, 4, 6, 8, 10, 12, 14], len: 2, vol: 0.7 }] },
+    { name: "Psych soul", bpm: [70, 80], swing: 0.12, progs: [25, 26, 27, 28, 29], echo: true, tone: "flat",
+      feel: "Dreamy and laid back, inspired by Thai funk, dub and soul. Hum the line first, then play it. Sit on the beat without rushing.",
+      kick: [0, 7, 10], snare: [], rim: [4, 12], ghost: [15], hat: [0, 2, 4, 6, 8, 10, 12, 14], tamb: [12],
+      comp: [{ inst: "ep", steps: [0], len: 10, vol: 0.7 }, { inst: "gtr", steps: [6, 14], len: 1, vol: 0.45 }] }
   ];
 
   /* Progressions: chords are [semitones from key, quality, suffix]. 0 is the blues. 1-20 are the general pool. 21+ are for specific genres. */
@@ -129,7 +133,10 @@ window.BASS_DATA = (function () {
     { roman: "Imaj7 – iii7 – vi7 – IVmaj7", ch: [[0,"maj","maj7"],[4,"min","7"],[9,"min","7"],[5,"maj","maj7"]] },
     { roman: "i7 – iv7 – i7 – v7", ch: [[0,"min","7"],[5,"min","7"],[0,"min","7"],[7,"min","7"]] },
     { roman: "i7 – i7 – IV7 – IV7", ch: [[0,"min","7"],[0,"min","7"],[5,"maj","7"],[5,"maj","7"]] },
-    { roman: "i – i – VII – VII", ch: [[0,"min"],[0,"min"],[10,"maj"],[10,"maj"]] }
+    { roman: "i – i – VII – VII", ch: [[0,"min"],[0,"min"],[10,"maj"],[10,"maj"]] },
+    { roman: "i – i – iv – iv", ch: [[0,"min"],[0,"min"],[5,"min"],[5,"min"]] },
+    { roman: "i – i – VImaj7 – VImaj7", ch: [[0,"min"],[0,"min"],[8,"maj","maj7"],[8,"maj","maj7"]] },
+    { roman: "i7 – i7 – iv7 – iv7", ch: [[0,"min","7"],[0,"min","7"],[5,"min","7"],[5,"min","7"]] }
   ];
 
   /* Original licks. n = [semitones from chord root, beats]. d = difficulty 1-3. q = chord type it fits. Each is one bar. */

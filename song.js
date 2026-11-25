@@ -155,14 +155,15 @@
         return;
       }
       var f = C.mfreq(e.m), o = ctx.createOscillator(), o2 = ctx.createOscillator(), flt = ctx.createBiquadFilter(), gg = ctx.createGain();
-      o.type = "sawtooth"; o2.type = "sine";
+      var flat = g.tone === "flat";
+      o.type = flat ? "triangle" : "sawtooth"; o2.type = "sine";
       if (e.tech === "/" && from) {
         var f0 = C.mfreq(from);
         o.frequency.setValueAtTime(f0, t); o.frequency.exponentialRampToValueAtTime(f, t + 0.08);
         o2.frequency.setValueAtTime(f0 * 2, t); o2.frequency.exponentialRampToValueAtTime(f * 2, t + 0.08);
       } else { o.frequency.value = f; o2.frequency.value = f * 2; }
-      flt.type = "lowpass"; flt.frequency.setValueAtTime(1400, t); flt.frequency.exponentialRampToValueAtTime(350, t + 0.35);
-      var peak = (e.tech === "h" || e.tech === "p") ? 0.28 : 0.42, end = t + Math.max(0.15, dur * 0.95);
+      flt.type = "lowpass"; flt.frequency.setValueAtTime(flat ? 650 : 1400, t); flt.frequency.exponentialRampToValueAtTime(flat ? 220 : 350, t + 0.35);
+      var peak = ((e.tech === "h" || e.tech === "p") ? 0.28 : 0.42) * (flat ? 1.25 : 1), end = t + Math.max(0.15, dur * 0.95);
       gg.gain.setValueAtTime(0.0001, t); gg.gain.exponentialRampToValueAtTime(peak, t + 0.006); gg.gain.exponentialRampToValueAtTime(0.0001, end);
       o.connect(flt); o2.connect(flt); flt.connect(gg); gg.connect(out);
       o.start(t); o2.start(t); o.stop(end + 0.05); o2.stop(end + 0.05);
