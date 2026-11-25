@@ -214,7 +214,9 @@
   function vis(t, fn) { seq.q.push({ t: t, fn: fn }); }
   (function raf() {
     if (ctx && seq.q.length) {
-      var now = ctx.currentTime;
+      /* the screen waits for the sound: Bluetooth headphones play it later than the phone sends it */
+      var lat = Math.max(store.bt ? (store.btLat == null ? 0.2 : store.btLat) : 0, ctx.outputLatency || 0);
+      var now = ctx.currentTime - Math.min(0.6, lat);
       while (seq.q.length && seq.q[0].t <= now) { var it = seq.q.shift(); try { it.fn(); } catch (e) {} }
     }
     requestAnimationFrame(raf);
@@ -426,6 +428,22 @@
     sel.addEventListener("change", function () { store.pick = { day: dkey(), name: sel.value }; save(); plan = makePlan(); bpmNow = {}; renderHome(); });
     gw.appendChild(sel); gw.style.margin = "6px 0";
     pw.appendChild(gw);
+    var sw = el("div", "small", "Sound: "); sw.style.margin = "6px 0";
+    [["Speaker / wired", false], ["Bluetooth", true]].forEach(function (o) {
+      var b = btn(!!store.bt === o[1] ? "tg on" : "tg", o[0], function () { store.bt = o[1]; save(); renderHome(); });
+      b.style.cssText = "padding:6px 12px;margin-left:6px;font-size:15px"; sw.appendChild(b);
+    });
+    pw.appendChild(sw);
+    if (store.bt) {
+      var ms = Math.round((store.btLat == null ? 0.2 : store.btLat) * 1000);
+      var fw = el("div", "small", "Notes on the screen still early or late? Delay: <b>" + ms + " ms</b> ");
+      fw.style.margin = "0 0 6px";
+      [["− less", -0.05], ["+ more", 0.05]].forEach(function (o) {
+        var b = btn("tg", o[0], function () { store.btLat = Math.max(0, Math.min(0.5, Math.round(((store.btLat == null ? 0.2 : store.btLat) + o[1]) * 100) / 100)); save(); renderHome(); });
+        b.style.cssText = "padding:4px 10px;margin-left:6px;font-size:14px"; fw.appendChild(b);
+      });
+      pw.appendChild(fw);
+    }
     pw.appendChild(btn("link", "Tune first", function () { showView("tune"); }));
     var rows = el("div", "card rows");
     BLOCKS.forEach(function (b) {
